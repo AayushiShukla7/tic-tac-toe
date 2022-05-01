@@ -52,6 +52,14 @@ const ResetGame = () => {
   ];
 
   player.value = 'X'; //Set the player value back to 'X'
+  showSinglePlayer.value = false;
+};
+
+//Single/Multi player selection
+const showSinglePlayer = ref(false);
+
+const toggle = () => {
+  showSinglePlayer.value = !showSinglePlayer.value;
 };
 
 </script>
@@ -61,6 +69,11 @@ const ResetGame = () => {
     <h1 class="mb-8 text-3xl font-bold uppercase">Tic Tac Toe</h1>
     
     <h3 class="text-xl mb-4">Player {{ player }}'s turn</h3>
+
+    <div class="big mb-8">
+      <button @click="toggle" :class="`px-4 py-2 bg-gray-400 rounded uppercase font-bold hover:bg-green-600 ${ showSinglePlayer ? 'bg-green-500' : ''}`">Single Player</button>
+      <button @click="toggle" :class="`ml-1 px-4 py-2 bg-gray-400 rounded uppercase font-bold hover:bg-blue-600 ${ !showSinglePlayer ? 'bg-blue-500' : ''}`">Multi Player</button>
+    </div>
 
     <div class="flex flex-col items-center mb-8">
       <div 
