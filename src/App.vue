@@ -8,6 +8,9 @@ const board = ref([
   ["", "", ""],
 ]); //The game board
 
+//Single/Multi player selection
+const showSinglePlayer = ref(false);
+
 //All posible Winning scenarios on the current board
 //Logic from - https://reactjs.org/tutorial/tutorial.html#declaring-a-winner
 const CalculateWinner = (squares) => {
@@ -41,59 +44,72 @@ const CalculateWinner = (squares) => {
 
 const winner = computed(() => CalculateWinner(board.value.flat())); //Calculate and declare the winner
 
+const sleep = (ms) => {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 //Gameplay - Multi player
-const MakeMove = (x, y) => {
+const MakeMove = async (x, y) => {
   if (winner.value) return; //Game Over - Winner is declared
-
+  
   if (board.value[x][y] != "") return; //The position is already filled. Can't make a move here.
+  
+  try {
+    if(showSinglePlayer.value) {
+      if(player.value === "X") {
+        //Play as the user wants (irrespective of the gameplay mode)
+        board.value[x][y] = player.value; //Player makes a move
 
-  //Single Player mode
-  if (showSinglePlayer.value) {
-    console.info("Single player mode gameplay");
-    if (player.value === "X") {
-      board.value[x][y] = player.value; //Player makes a move
+        if (winner.value) return; //Game Over - Winner is declared
+
+        player.value = player.value === "X" ? "O" : "X"; //Switch between players
+        await sleep(1000);  //Wait for 1 second before makig the AI move
+
+        console.info("Single player mode gameplay start.");
+        await MakeAIMove(board);
+        console.info("Single player mode gameplay end.");       
+        
+        player.value = player.value === "X" ? "O" : "X"; //Switch between players        
+      }
     }
     else {
-      aiPlay.value = ref(true); //Player 'O' is AI now. Follows MiniMax algorith for gameplay.
-      MakeAIMove(board, aiPlay);
-    }
-  } else {
-    //Multi Player Mode
-    console.info("Multi player mode gameplay");
-    board.value[x][y] = player.value; //Player makes a move
-  }
+      //Play as the user wants (Multi player mode)
+      board.value[x][y] = player.value; //Player makes a move
 
-  player.value = player.value === "X" ? "O" : "X"; //Switch between players
+      player.value = player.value === "X" ? "O" : "X"; //Switch between players
+    }
+  }
+  catch (err) {
+    throw err;
+  }
 };
 
 //Gameplay - Single player (Opponent --> AI)
-const MakeAIMove = (board, aiPlay) => {
-  if (aiPlay.value) {
-    /* Single Player gameplay - MiniMax logic */
-    let bestScore = -Infinity;
-    let bestMove;
+const MakeAIMove = (board) => {
+  /* Single Player gameplay - MiniMax logic */
+  let bestScore = -Infinity;
+  let bestMove;
 
-    for (let i = 0; i < 3; i++) {
-      for (let j = 0; j < 3; j++) {
-
-        //Is the spot available(empty)?
-          if (board.value[i][j] == "") {
-          board.value[i][j] = player.value;    //Set the player to the position - TEMPORARY!!
-          let score = MiniMax(board, 0, true);
-          board.value[i][j] = '';   //Undo the move immediately (Don't want to alter the gameboard yet)
-          
-          if(score > bestScore) {
-            bestScore = score;
-            bestMove = {i, j};
-          }
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 3; j++) {
+      //Is the spot available(empty)?
+      if (board.value[i][j] == "") {
+        board.value[i][j] = player.value;    //Set the player to the position - TEMPORARY!!
+        let score = MiniMax(board, 0, true);
+        board.value[i][j] = '';   //Undo the move immediately (Don't want to alter the gameboard yet)
+        
+        if(score > bestScore) {
+          bestScore = score;
+          bestMove = {i, j};
         }
-
       }
     }
-
-    board.value[bestMove.i][bestMove.j] = player.value;   //Make the best move found
-    aiPlay.value = ref(false);    //Disable AI gameplay  
   }
+
+  //if(bestMove !== null && bestMove !== undefined) {
+    board.value[bestMove.i][bestMove.j] = player.value;   //Make the best move found
+    player.value = player.value === "X" ? "O" : "X"; //Switch between players
+  //}
 };
 
 const Scores = ref({
@@ -103,12 +119,46 @@ const Scores = ref({
 });
 
 const MiniMax = (board, depth, isMinimizing) => {
-  if (winner.value) return; //Game Over - Winner is declared
+  let result = winner.value;
+  if(result !== null) {
+    return Scores[result];
+  }
 
   if(isMinimizing) {
+    let bestScore = -Infinity;
 
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        //Is the spot available(empty)?
+        if (board.value[i][j] == "") {
+          board.value[i][j] = player.value;
+          let score = MiniMax(board, depth + 1, false);
+          board.value[i][j] = '';   //Undo the move immediately (Don't want to alter the gameboard yet)
+          bestScore = Math.min(score, bestScore);
+        }
+      }
+    }
+
+    return bestScore;
   }
-  return 1;
+  else {
+    //Maximizer play (X)
+    let bestScore = Infinity;
+
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        //Is the spot available(empty)?
+        if (board.value[i][j] == "") {
+          board.value[i][j] = player.value;
+          let score = MiniMax(board, depth + 1, true);
+          board.value[i][j] = '';   //Undo the move immediately (Don't want to alter the gameboard yet)
+          bestScore = Math.max(score, bestScore);
+        }
+      }
+    }
+
+    return bestScore;
+  }
 }
 
 const ResetGame = () => {
@@ -121,10 +171,6 @@ const ResetGame = () => {
   player.value = "X"; //Set the player value back to 'X'
   showSinglePlayer.value = false;   //Play multi-player by default
 };
-
-//Single/Multi player selection
-const showSinglePlayer = ref(false);
-const aiPlay = ref(false);
 
 const toggle = () => {
   showSinglePlayer.value = !showSinglePlayer.value;
@@ -182,14 +228,11 @@ const toggle = () => {
       </div>
     </div>
 
-    <!-- <h2 v-if="winner" class="text-6xl font-bold mb-8">
+    <h2 v-if="winner" class="text-6xl font-bold mb-8">
       Player '{{ winner }}' wins!
-    </h2> -->
-    <h2 v-if="winner === 'tie'" class="text-6xl font-bold mb-8">
-      It's a '{{ winner }}'
     </h2>
-    <h2 v-else class="text-6xl font-bold mb-8">
-      Player '{{ winner }}' wins!
+    <h2 v-else-if="winner === 'tie'" class="text-6xl font-bold mb-8">
+      It's a '{{ winner }}'
     </h2>
 
     <button
