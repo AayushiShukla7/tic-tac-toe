@@ -56,21 +56,23 @@ const sleep = (ms) => {
 const bestMove = () => {
   // AI to make its turn
   let bestScore = -Infinity;
-  let move;
+  let move;  
+  
   for (let i = 0; i < 3; i++) {
     for (let j = 0; j < 3; j++) {
       // Is the spot available?
-      if (board.value[i][j] == '') {
+      if (board.value[i][j] == '') {        
         board.value[i][j] = ai;
-        let score = minimax(board, 0, true);
+        let score = minimax(board, 0, false);
         board.value[i][j] = '';
         if (score > bestScore) {
           bestScore = score;
           move = { i, j };
-        }
+        }        
       }
     }
   }
+
   board.value[move.i][move.j] = ai;
   currentPlayer = human;
 }
@@ -110,16 +112,18 @@ const checkWinner = () => {
     winner = board.value[2][0];
   }
 
-  let openSpots = 0;
+  //Declare and initialize 'openSpotsCount'
+  let openSpotsCount = 0;
+
   for (let i = 0; i < 3; i++) {
     for (let j = 0; j < 3; j++) {
       if (board.value[i][j] == '') {
-        openSpots++;
+        openSpotsCount++;
       }
     }
   }
 
-  if (winner == null && openSpots == 0) {
+  if (winner == null && openSpotsCount == 0) {
     return 'tie';
   } else {
     return winner;
@@ -135,7 +139,7 @@ const minimax = (board, depth, isMaximizing) => {
   if (isMaximizing) {
     let bestScore = -Infinity;
     for (let i = 0; i < 3; i++) {
-      for (let j = 0; j < 3; j++) {
+      for (let j = 0; j < 3; j++) {        
         // Is the spot available?
         if (board.value[i][j] == '') {
           board.value[i][j] = ai;
@@ -173,7 +177,7 @@ const MakeMove = async (x, y) => {
   
   try {
     if(showSinglePlayer.value) {
-      //Approach #
+      //Approach #1
       // if(player.value == "X") {
       //   //Play as the user wants (irrespective of the gameplay mode)
       //   board.value[x][y] = player.value; //Player makes a move
@@ -194,7 +198,24 @@ const MakeMove = async (x, y) => {
         if (board.value[x][y] == '') {
           board.value[x][y] = human;
           currentPlayer = ai;
-          bestMove();
+
+          //Track open spots
+          let openSpotsCount = 0;
+
+          for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 3; j++) {
+              if (board.value[i][j] == '') {
+                openSpotsCount++;
+              }
+            }
+          }
+
+          //Is the middle cell empty? - Best Move
+          if(currentPlayer === ai && openSpotsCount >= 8 && board.value[1][1] === '') {
+            board.value[1][1] = ai; 
+            currentPlayer = human;
+          }
+          else bestMove();
         }
       }
     }
@@ -319,6 +340,7 @@ const ResetGame = () => {
 
   player.value = "X"; //Set the player value back to 'X'
   showSinglePlayer.value = false;   //Play multi-player by default
+  console.clear();
 };
 
 const toggle = () => {
