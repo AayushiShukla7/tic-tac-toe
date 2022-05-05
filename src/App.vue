@@ -51,7 +51,7 @@ const sleep = (ms) => {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-//Test code for single player - START
+//#region Test code for single player - START
 
 const bestMove = () => {
   // AI to make its turn
@@ -167,7 +167,7 @@ const minimax = (board, depth, isMaximizing) => {
   }
 }
 
-//Test code for single player - END
+//#endregion Test code for single player - END
 
 //Gameplay - Multi player
 const MakeMove = async (x, y) => {
@@ -177,7 +177,7 @@ const MakeMove = async (x, y) => {
   
   try {
     if(showSinglePlayer.value) {
-      //Approach #1
+      //#region Approach #1
       // if(player.value == "X") {
       //   //Play as the user wants (irrespective of the gameplay mode)
       //   board.value[x][y] = player.value; //Player makes a move
@@ -191,8 +191,9 @@ const MakeMove = async (x, y) => {
       //   BestMove();
       //   console.info("Single player mode gameplay end."); 
       // }
+      //#endregion
 
-      //Approach #2    
+      //#region Approach #2    
       if (currentPlayer == human) {
         // If valid turn
         if (board.value[x][y] == '') {
@@ -218,6 +219,7 @@ const MakeMove = async (x, y) => {
           else bestMove();
         }
       }
+      //#endregion
     }
     else {
       //Play as the user wants (Multi player mode)
