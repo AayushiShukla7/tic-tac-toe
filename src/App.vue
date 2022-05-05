@@ -14,8 +14,25 @@ let ai = 'O';
 let human = 'X';
 let currentPlayer = human;
 
+let scores = {
+  X: 10,
+  O: -10,
+  tie: 0
+};
+
+let coordinates = {
+  0: "0,0",
+  1: "0,1",
+  2: "0,2",
+  3: "1,0",
+  4: "1,1",
+  5: "1,2",
+  6: "2,0",
+  7: "2,1",
+  8: "2,2"
+};
+
 //All posible Winning scenarios on the current board
-//Logic from - https://reactjs.org/tutorial/tutorial.html#declaring-a-winner
 const CalculateWinner = (squares) => {
   const lines = [
     [0, 1, 2],
@@ -28,10 +45,13 @@ const CalculateWinner = (squares) => {
     [2, 4, 6],
   ];
 
+  let winner = null;
+
   for (let i = 0; i < lines.length; i++) {
     const [a, b, c] = lines[i];
     if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-      return squares[a];
+      winner = squares[a];
+      return winner;
     }
   }
 
@@ -40,134 +60,76 @@ const CalculateWinner = (squares) => {
   for (let j = 0; j < squares.length; j++) {
     if(squares[j] == '') openSpots++;
   }
-  if(openSpots == 0)  return 'tie';
 
-  return null;
-};
-
-const winner = computed(() => CalculateWinner(board.value.flat())); //Calculate and declare the winner
-
-const sleep = (ms) => {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-//#region Test code for single player - START
-
-const bestMove = () => {
-  // AI to make its turn
-  let bestScore = -Infinity;
-  let move;  
-  
-  for (let i = 0; i < 3; i++) {
-    for (let j = 0; j < 3; j++) {
-      // Is the spot available?
-      if (board.value[i][j] == '') {        
-        board.value[i][j] = ai;
-        let score = minimax(board, 0, false);
-        board.value[i][j] = '';
-        if (score > bestScore) {
-          bestScore = score;
-          move = { i, j };
-        }        
-      }
-    }
-  }
-
-  board.value[move.i][move.j] = ai;
-  currentPlayer = human;
-}
-
-let scores = {
-  X: 10,
-  O: -10,
-  tie: 0
-};
-
-const equals3 = (a, b, c) => {
-  return a == b && b == c && a != '';
-}
-
-const checkWinner = () => {
-  let winner = null;
-
-  // horizontal
-  for (let i = 0; i < 3; i++) {
-    if (equals3(board.value[i][0], board.value[i][1], board.value[i][2])) {
-      winner = board.value[i][0];
-    }
-  }
-
-  // Vertical
-  for (let i = 0; i < 3; i++) {
-    if (equals3(board.value[0][i], board.value[1][i], board.value[2][i])) {
-      winner = board.value[0][i];
-    }
-  }
-
-  // Diagonal
-  if (equals3(board.value[0][0], board.value[1][1], board.value[2][2])) {
-    winner = board.value[0][0];
-  }
-  if (equals3(board.value[2][0], board.value[1][1], board.value[0][2])) {
-    winner = board.value[2][0];
-  }
-
-  //Declare and initialize 'openSpotsCount'
-  let openSpotsCount = 0;
-
-  for (let i = 0; i < 3; i++) {
-    for (let j = 0; j < 3; j++) {
-      if (board.value[i][j] == '') {
-        openSpotsCount++;
-      }
-    }
-  }
-
-  if (winner == null && openSpotsCount == 0) {
+  if (winner == null && openSpots <= 1) {
     return 'tie';
   } else {
     return winner;
   }
-}
+};
 
-const minimax = (board, depth, isMaximizing) => {
-  let result = checkWinner();
-  if (result !== null) {
-    return scores[result];
+const winner = computed(() => CalculateWinner(board.value.flat())); //Calculate and declare the winner
+
+const CheckIfHumanWinsNextRound = (boardVal, activePlayer) => {
+  let coord1 = -1;
+  let coord2 = -1;
+  let winningMove;
+
+  //Check if human could win with the next move
+  console.log("Current Player is - " + activePlayer);
+  console.log(boardVal);
+
+  const lines = [
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+    [0, 4, 8],
+    [2, 4, 6],
+  ];
+
+  let possibleWinner = null;
+  let tempPlayer = activePlayer === ai ? human : ai;
+
+  for (let i = 0; i < lines.length; i++) {
+    const [a, b, c] = lines[i];
+    // if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+    //   possibleWinner = squares[a];
+    // }
+
+    //Check if any 2 of the 3-set winning cells are filled with the current player
+    if((boardVal[a] === human && boardVal[b] === human) || (boardVal[b] === human && boardVal[c] === human) || (boardVal[a] === human && boardVal[c] === human)){
+      possibleWinner = human;
+
+      if(possibleWinner != null) {
+        if(boardVal[a] === '') {
+          coord1 = coordinates[a].split(',')[0];
+          coord2 = coordinates[a].split(',')[1];
+        }
+        else if(boardVal[b] === '') {
+          coord1 = coordinates[b].split(',')[0];
+          coord2 = coordinates[b].split(',')[1];
+        }
+        else if(boardVal[c] === '') {
+          coord1 = coordinates[c].split(',')[0];
+          coord2 = coordinates[c].split(',')[1];
+        }
+
+        break;
+      }      
+    }
+    else continue;
   }
 
-  if (isMaximizing) {
-    let bestScore = -Infinity;
-    for (let i = 0; i < 3; i++) {
-      for (let j = 0; j < 3; j++) {        
-        // Is the spot available?
-        if (board.value[i][j] == '') {
-          board.value[i][j] = ai;
-          let score = minimax(board, depth + 1, false);
-          board.value[i][j] = '';
-          bestScore = Math.max(score, bestScore);
-        }
-      }
-    }
-    return bestScore;
-  } else {
-    let bestScore = Infinity;
-    for (let i = 0; i < 3; i++) {
-      for (let j = 0; j < 3; j++) {
-        // Is the spot available?
-        if (board.value[i][j] == '') {
-          board.value[i][j] = human;
-          let score = minimax(board, depth + 1, true);
-          board.value[i][j] = '';
-          bestScore = Math.min(score, bestScore);
-        }
-      }
-    }
-    return bestScore;
-  }
-}
+  winningMove = { coord1, coord2 };
+  return winningMove;
+};
 
-//#endregion Test code for single player - END
+const sleep = (ms) => {
+  return new Promise(resolve => setTimeout(resolve, ms));
+};
 
 //Gameplay - Multi player
 const MakeMove = async (x, y) => {
@@ -177,23 +139,8 @@ const MakeMove = async (x, y) => {
   
   try {
     if(showSinglePlayer.value) {
-      //#region Approach #1
-      // if(player.value == "X") {
-      //   //Play as the user wants (irrespective of the gameplay mode)
-      //   board.value[x][y] = player.value; //Player makes a move
-
-      //   if (winner.value) return; //Game Over - Winner is declared
-
-      //   player.value = 'O'; //Switch to AI
-      //   await sleep(1000);  //Wait for 1 second before making the AI move
-
-      //   console.info("Single player mode gameplay start.");
-      //   BestMove();
-      //   console.info("Single player mode gameplay end."); 
-      // }
-      //#endregion
-
-      //#region Approach #2    
+      
+      //#region AI Gameplay     
       if (currentPlayer == human) {
         // If valid turn
         if (board.value[x][y] == '') {
@@ -212,13 +159,15 @@ const MakeMove = async (x, y) => {
           }
 
           //Is the middle cell empty? - Best Move
-          if(currentPlayer === ai && openSpotsCount >= 8 && board.value[1][1] === '') {
+          if(currentPlayer === ai && openSpotsCount > 7 && board.value[1][1] === '') {
             board.value[1][1] = ai; 
             currentPlayer = human;
           }
-          else bestMove();
+          else 
+            BestMove();
         }
       }
+
       //#endregion
     }
     else {
@@ -235,65 +184,46 @@ const MakeMove = async (x, y) => {
 };
 
 //Gameplay - Single player (Opponent --> AI)
-// const BestMove = () => {
-//   /* Single Player gameplay - MiniMax logic */
-//   let bestScore = Infinity;
-//   let move;
-
-//   for (let i = 0; i < 3; i++) {
-//     for (let j = 0; j < 3; j++) {
-//       //Is the spot available(empty)?
-//       if (board.value[i][j] == '') {
-//         board.value[i][j] = 'O';    //Set the player to the position - TEMPORARY!!
-//         let score = MiniMax(board, 0, true);
-//         board.value[i][j] = '';   //Undo the move immediately (Don't want to alter the gameboard yet)
-        
-//         if(score > bestScore) {
-//           bestScore = score;
-//           move = {i, j};
-//         }
-//       }
-//     }
-//   }
-
-//   board.value[move.i][move.j] = 'O';   //Make the best move found
-//   player.value = 'X'; //Switch back to human
-// };
-const BestMove = () => {
-  /* Single Player gameplay - MiniMax logic */
+const BestMove = async () => {
+  /* Single Player gameplay (Player = AI) - MiniMax logic */
   let bestScore = -Infinity;
   let move;
 
-  for (let i = 0; i < 3; i++) {
-    for (let j = 0; j < 3; j++) {
-      //Is the spot available(empty)?
-      if (board.value[i][j] == '') {
-        board.value[i][j] = 'O';    //Set the player to the position - TEMPORARY!!
-        let score = MiniMax(board, 0, false);
-        board.value[i][j] = '';   //Undo the move immediately (Don't want to alter the gameboard yet)
-        
-        if(score > bestScore) {
-          bestScore = score;
-          move = {i, j};
+  //Check if human(X) wins with the next move
+  move = await CheckIfHumanWinsNextRound(board.value.flat(), currentPlayer);
+
+  if(move != null && move.coord1 !== -1 && move.coord2 !== -1) {
+    board.value[move.coord1][move.coord2] = ai;   //Make the best move found
+    player.value = human; //Switch back to human
+    currentPlayer = human;
+  }
+  else {
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        //Is the spot available(empty)?
+        if (board.value[i][j] == '') {
+          board.value[i][j] = ai;    //Set the player to the position - TEMPORARY!!
+          let score = MiniMax(board, 0, false);
+          board.value[i][j] = '';   //Undo the move immediately (Don't want to alter the gameboard yet)
+          
+          if(score > bestScore) {
+            bestScore = score;
+            move = {i, j};
+          }
         }
       }
     }
+
+    board.value[move.i][move.j] = ai;   //Make the best move found
+    player.value = human; //Switch back to human
+    currentPlayer = human;
   }
-
-  board.value[move.i][move.j] = player.value;   //Make the best move found
-  player.value = 'X'; //Switch back to human
 };
-
-const Scores = ref({
-  X: 10,
-  O: -10,
-  tie: 0
-});
 
 const MiniMax = (board, depth, isMaximizing) => {
   let result = winner.value;
   if(result !== null) {
-    return Scores[result];
+    return scores[result];
   }
    
   if(isMaximizing) {
@@ -304,7 +234,7 @@ const MiniMax = (board, depth, isMaximizing) => {
       for (let j = 0; j < 3; j++) {
         //Is the spot available(empty)?
         if (board.value[i][j] == '') {
-          board.value[i][j] = 'O';
+          board.value[i][j] = ai;
           let score = MiniMax(board, depth + 1, false);
           board.value[i][j] = '';   //Undo the move immediately (Don't want to alter the gameboard yet)
           bestScore = Math.max(score, bestScore);
@@ -321,7 +251,7 @@ const MiniMax = (board, depth, isMaximizing) => {
       for (let j = 0; j < 3; j++) {
         //Is the spot available(empty)?
         if (board.value[i][j] == '') {
-          board.value[i][j] = 'X';
+          board.value[i][j] = human;
           let score = MiniMax(board, depth + 1, true);
           board.value[i][j] = '';   //Undo the move immediately (Don't want to alter the gameboard yet)
           bestScore = Math.min(score, bestScore);
@@ -396,7 +326,7 @@ const toggle = () => {
             cell === 'X' ? 'text-red-500' : 'text-green-400'
           }`"
         >
-          {{ cell === "X" ? "close" : cell === "O" ? "circle" : "" }}
+          {{ cell === 'X' ? "close" : cell === 'O' ? "circle" : '' }}
         </div>
       </div>
     </div>
@@ -426,5 +356,3 @@ const toggle = () => {
   </main>
 </template>
 
-<style>
-</style>
